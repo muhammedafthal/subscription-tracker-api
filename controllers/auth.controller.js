@@ -35,9 +35,9 @@ export const signUp = async (req, res, next) => {
         ], { session })
 
         const token = jwt.sign(
-            { userId: newUsers[0]._id},
+            { userId: newUsers[0]._id },
             JWT_SECRET,
-            { expiresIn: JWT_EXPIRES_IN}
+            { expiresIn: JWT_EXPIRES_IN }
         
         )
 
@@ -60,8 +60,44 @@ export const signUp = async (req, res, next) => {
     }
 };
 
-export const signIn = async () => {
+export const signIn = async (req, res, next) => {
+    try {
+        const { email, password } = req.body;
 
+        const existUser = await user.findOne({ email });
+
+        if(!existUser) {
+            const error = new Error('User not found');
+            error.statusCode = 404;
+            throw error;
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, existUser.password);
+
+        if(!isPasswordValid) {
+            const error = new Error('Invalid password');
+            error.statusCode = 401;
+            throw error;
+        }
+
+        const token = jwt.sign(
+            { userId: user._id },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'User signed in successfully',
+            data: {
+                token,
+                existUser
+            }
+        })
+        
+    } catch(error) {
+        next(error);
+    }
 };
 
 export const siignOut = async () => {
