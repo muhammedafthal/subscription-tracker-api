@@ -5,10 +5,8 @@ const arcjetMiddleware = async (req, res, next) => {
         const decision = await aj.protect(req, { requested: 1 });
 
         // if (req.headers['user-agent']?.includes('Postman')) {
-        //     return next();
+        //     return next(), console.log('Issue: ', decision);;
         // }
-        
-        console.log('Issue: ', decision);
         
         if(decision.isDenied()) {
             if(decision.reason?.isRateLimit()) {
