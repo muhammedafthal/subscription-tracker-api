@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 
 import { createRequire } from 'module';
 import subscription from '../models/subscription.model.js';
+import { sentReminderEmail } from '../utils/send-email.js';
 
 const require = createRequire(import.meta.url);
 const { serve } = require('@upstash/workflow/express');
@@ -10,7 +11,7 @@ const REMINDERS = [7, 5, 2, 1];
 
 export const sendReminders = serve(async (context) => {
     const { subscriptionId } = context.requestPayload;
-    const  userSubscription = await fetchSubscription(context, subscriptionId);
+    const  userSubscription = await fetchSubscription(context, subscriptionId);    
 
     if(!userSubscription || userSubscription.status !== 'Active') return;
 
@@ -28,7 +29,8 @@ export const sendReminders = serve(async (context) => {
             await sleepUntilReminder(context, `Reminder ${daysBefore} days before`, reminderDate);
         }
 
-        await triggerReminder(context,  `Reminder ${daysBefore} days before`);
+        // Example: 2 days before reminder
+        await triggerReminder(context, `${daysBefore} days before reminder`, userSubscription);
     }
 });
 
@@ -41,25 +43,20 @@ const fetchSubscription = async (context, subscriptionId) => {
     })
 }
 
-// const fetchSubscription = async (context, subscriptionId) => {
-//     return await context.run('get subscription', async () => {
-//         const sub = await subscription
-//             .findById(subscriptionId)
-//             .populate('user', 'name email')
-//             .lean();
-
-//         return sub;
-//     });
-// };
-
 const sleepUntilReminder = async (context, label, date) => {
     console.log(`Sleeping until ${label} reminder at ${date}`);
     await context.sleepUntil(label, date.toDate());
 }
 
-const triggerReminder = async (context, label) => {
-    return await context.run(label, () => {
-        console.log(`Triggering ${label} reminder`);
+const triggerReminder = async (context, label, userSubscription) => {
+    return await context.run(label, async () => {
+        console.log(`Triggering ${label}`);
         // Send email, sms or push notification etc...
-    })
+        console.log(userSubscription.user);
+        await sentReminderEmail({
+            to: userSubscription.user.email,
+            type: label,
+            userSubscription
+        })        
+    })    
 }
