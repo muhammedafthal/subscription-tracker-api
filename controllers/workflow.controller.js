@@ -30,7 +30,9 @@ export const sendReminders = serve(async (context) => {
         }
 
         // Example: 2 days before reminder
-        await triggerReminder(context, `${daysBefore} days before reminder`, userSubscription);
+        if(dayjs().isSame(reminderDate, 'day')) {
+            await triggerReminder(context, `${daysBefore} days before reminder`, userSubscription);
+        }
     }
 });
 
@@ -51,8 +53,8 @@ const sleepUntilReminder = async (context, label, date) => {
 const triggerReminder = async (context, label, userSubscription) => {
     return await context.run(label, async () => {
         console.log(`Triggering ${label}`);
+
         // Send email, sms or push notification etc...
-        console.log(userSubscription.user);
         await sentReminderEmail({
             to: userSubscription.user.email,
             type: label,
@@ -60,3 +62,4 @@ const triggerReminder = async (context, label, userSubscription) => {
         })        
     })    
 }
+
